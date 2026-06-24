@@ -441,4 +441,64 @@ info.plist
 </plist>
 
 ```
+python -
+```
+if platform == 'ios':
+    from pyobjus import autoclass
+```
+比對檔案
+```
+if not os.path.isfile(self.app.setting_records):
+	self.mac_timer = time.time()
+	Clock.schedule_interval(self.get_mac,1)
+else:
+	with open(self.app.setting_records,'r') as f:
+		f1 = f.read()
+	f.close()
+	if platform == 'android' or platform == 'win':
+		self.mac = f1
+	if platform == 'ios':
+		mac = eval(f1)
+		self.mac = mac['mac']
+	self.init_mqtt()
 
+```
+```
+    def qr_callback(self, data):
+        self.mac = data["mac"]
+
+        with open(self.app.setting_records, "w") as f:
+            f.write(self.mac)
+        f.close()
+        self.make_qrcode()
+        self.init_mqtt()
+
+    def qr_scan(self):
+        if platform == 'android':
+            self.qrscanner = QRScannerAndroid(
+                callback=self.qr_callback
+            )
+            self.qrscanner.scan()
+        elif platform == 'ios':
+            QRCodeScannerHelper = autoclass("QRCodeScannerHelper")
+            QRCodeScannerHelper.startQRCodeScanner()
+            Clock.schedule_interval(self.check_qrcode_result, 0.5)
+    
+    def check_qrcode_result(self, *args):
+        path = os.path.join(
+            os.path.expanduser("~"),
+            "Documents",
+            "qrcode.txt"
+        )
+
+        if not os.path.exists(path):
+            return
+
+        with open(path, "r", encoding="utf-8") as f:
+            qr_text = f.read().strip()
+        mac = eval(qr_text)
+        self.mac = mac['mac']
+        Clock.unschedule(self.check_qrcode_result)
+        self.make_qrcode()
+        self.init_mqtt()
+```
